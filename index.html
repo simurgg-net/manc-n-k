@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sanal Kart Masası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14232b; --felt:#1d3a40; --felt2:#244a50; --ink:#f3ecdc; --mute:#9fb4b4;
+  --door:#8a4b2d; --door2:#b8693f; --treas:#c9a227; --treas2:#e6c85a; --acc:#ff7a59; --line:#3a5c61;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,sans-serif;font-size:15px}
+button{font:inherit;color:inherit;background:var(--felt2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:hover{background:#2c5960}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button.primary{background:var(--acc);border-color:var(--acc);color:#1a0d08;font-weight:700}
+button.primary:hover{background:#ff8f72}
+button.small{padding:4px 9px;font-size:13px}
+input,select,textarea{font:inherit;color:var(--ink);background:#0f1a20;border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 12px 40px;padding-top:max(12px,env(safe-area-inset-top))}
+
+/* lobby */
+.lobby{max-width:440px;margin:8vh auto 0;padding:0 16px}
+.lobby h1{font-size:34px;margin:0 0 4px;letter-spacing:-.02em}
+.lobby p{color:var(--mute);margin:0 0 18px}
+.panel{background:var(--felt);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.err{color:#ffb4a2;margin-top:8px;min-height:18px}
+
+/* top bar */
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.pill{background:var(--felt);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e55;margin-right:6px}
+.dot.on{background:#5ed17f}
+.banner{background:#3a2a1e;border:1px solid #6b4a2e;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+
+/* zones */
+.zone{background:var(--felt);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.zhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.zname{font-weight:700;font-size:16px}
+.stat{display:flex;align-items:center;gap:6px}
+.lvl{font-size:22px;font-weight:700;min-width:28px;text-align:center}
+.cards{display:flex;gap:8px;flex-wrap:wrap;min-height:70px;align-items:flex-start}
+.empty{color:var(--mute);font-size:13px;padding:6px 2px}
+.sub{color:var(--mute);font-size:12px;margin:8px 0 4px}
+
+/* cards */
+.card{width:118px;min-height:150px;border-radius:10px;padding:8px;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:4px;border:2px solid transparent;text-align:left;flex:0 0 auto}
+.card.door{background:linear-gradient(160deg,var(--door2),var(--door));color:#fff4ea}
+.card.treasure{background:linear-gradient(160deg,var(--treas2),var(--treas));color:#2b2204}
+.card .kind{font-size:11px;opacity:.85}
+.card .nm{font-weight:700;font-size:14px;line-height:1.15}
+.card .val{position:absolute;top:6px;right:8px;font-weight:700;font-size:20px}
+.card .tx{font-size:11.5px;line-height:1.25;margin-top:auto}
+.card:hover{border-color:#fff}
+.card.back{background:repeating-linear-gradient(45deg,#2c4a50,#2c4a50 6px,#335a60 6px,#335a60 12px);cursor:default;min-height:150px;justify-content:center;align-items:center;font-size:12px;color:var(--mute)}
+.card.back:hover{border-color:transparent}
+.big .card{width:200px;min-height:250px;font-size:15px;cursor:default}
+.big .card .nm{font-size:20px}.big .card .tx{font-size:14px}.big .card .val{font-size:30px}
+.big .card:hover{border-color:transparent}
+
+/* decks */
+.decks{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.deck{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:150px}
+.deck .title{font-weight:700}
+.deck .count{color:var(--mute);font-size:13px}
+.power{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+.power span{background:#0f1a20;border-radius:8px;padding:5px 10px}
+.power b{font-size:18px}
+.log{font-size:13px;color:var(--mute);max-height:150px;overflow:auto;display:flex;flex-direction:column-reverse}
+.log div{padding:2px 0}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(5,10,14,.72);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.mbox{background:var(--felt);border:1px solid var(--line);border-radius:16px;padding:16px;max-width:560px;width:100%;max-height:88vh;overflow:auto}
+.mbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.big{display:flex;justify-content:center}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#0f1a20;border:1px solid var(--line);padding:8px 14px;border-radius:999px;z-index:20}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* ============================================================
+   KENDİ KARTLARINI BURAYA YAZABİLİRSİN
+   Format: [deste, tür, isim, değer, açıklama, kaç tane]
+   deste: 'door' (Kapı) veya 'treasure' (Hazine)
+   değer: canavarda seviye, eşyada bonus (yoksa 0)
+   Oyun içinden de "Kart ekle" ile ekleyebilirsin.
+   ============================================================ */
+const STARTER = [
+  // KAPI: canavarlar
+  ['door','Canavar','Sinirli Hamster',2,'Kaçamazsan ısırır: 1 seviye kaybet. Yenersen 1 hazine.'],
+  ['door','Canavar','Kanalizasyon Timsahı',8,'Yenersen 2 hazine. Kaçarsan 5 ve üstü zar gerekir.'],
+  ['door','Canavar','Kayıp Çorap Hortlağı',4,'Yenilirsen elindeki bir kartı at.'],
+  ['door','Canavar','Pazartesi Sabahı Canavarı',6,'Yenersen 1 hazine. Yenilirsen bir tur oynama.'],
+  ['door','Canavar','Wi-Fi Koparan Goblin',5,'Yenilirsen elindeki kartı oynayamazsın bu tur.'],
+  ['door','Canavar','Dedikoducu Teyze Ejderhası',12,'Yenersen 2 seviye ve 3 hazine.'],
+  ['door','Canavar','Yapışkan Jöle Küp',3,'Kaçış zarına -1.'],
+  ['door','Canavar','Toplantı Uzatan Ork',7,'Yenersen 1 seviye.'],
+  ['door','Canavar','Fazla Hevesli Kedi',1,'Yenersen 1 hazine, kedi seni sever.'],
+  ['door','Canavar','Gece 3 Kabusu',9,'Yenersen 2 hazine. Yenilirsen 1 seviye kaybet.'],
+  ['door','Canavar','Zıplayan Fasulye Sürüsü',4,'Yenersen 1 hazine.'],
+  ['door','Canavar','Süt Taşıran Büyücü',5,'Yenersen 1 seviye.'],
+  // KAPI: lanetler
+  ['door','Lanet','Tökezleme Laneti',0,'Bu savaşta -3 güç. Sonra at.'],
+  ['door','Lanet','Çorap Kaybı',0,'Masandaki bir eşyayı at.'],
+  ['door','Lanet','Dil Dönmesi',0,'Bir tur boyunca konuşman yasak. Sonra at.'],
+  ['door','Lanet','Uykusuzluk',0,'1 seviye kaybet.'],
+  // KAPI: sınıf / ırk / diğer
+  ['door','Sınıf','Kahve Büyücüsü',0,'Elinden bir kartı atarak savaşa +2 verebilirsin.'],
+  ['door','Sınıf','Gece Hırsızı',0,'Bir oyuncunun masasından bir eşya çalmayı deneyebilirsin (zar 5+).'],
+  ['door','Irk','Cüce Barista',0,'Eşyalarında +1 bonus. Büyük eşya taşıyabilirsin.'],
+  ['door','Irk','Elf Yazılımcı',0,'Kaçış zarına +1.'],
+  ['door','Yardımcı','Yardım Eden Yabancı',0,'Bir savaşta +2 güç ver. Karşılığında bir hazine isteyebilir.'],
+  // HAZİNE: eşyalar
+  ['treasure','Eşya','Pofuduk Kask',1,'Kafa eşyası.'],
+  ['treasure','Eşya','Zıpkın Terlik',2,'Ayak eşyası.'],
+  ['treasure','Eşya','Kalkan Tepsi',2,'Tek el.'],
+  ['treasure','Eşya','Paslı Kılıç',2,'Tek el.'],
+  ['treasure','Eşya','Büyülü Çatal',3,'Tek el.'],
+  ['treasure','Eşya','Zırh Mont',3,'Gövde eşyası.'],
+  ['treasure','Eşya','Mega Kaşık',4,'İki el. Büyük eşya.'],
+  ['treasure','Eşya','Sihirli Çorap',1,'Ayak eşyası. Çorap Kaybı lanetini engeller.'],
+  ['treasure','Eşya','Dev Çekiç',3,'İki el.'],
+  ['treasure','Eşya','Pelerin Havlu',1,'Gövde eşyası.'],
+  ['treasure','Eşya','Hız Çizmeleri',2,'Ayak eşyası. Kaçış zarına +1.'],
+  // HAZİNE: tek kullanımlık
+  ['treasure','Tek Kullanımlık','Kaçış İksiri',0,'Kaçış zarına +2. Kullanınca at.',2],
+  ['treasure','Tek Kullanımlık','Patlayan Konfeti',3,'Bir canavara -3 güç (savaş sırasında). Kullanınca at.',2],
+  ['treasure','Tek Kullanımlık','Uyku Tozu',0,'Bir canavarı savaştan çıkar. Kullanınca at.'],
+  ['treasure','Seviye','Küçük Başarı',0,'Hemen 1 seviye atla.',2],
+  ['treasure','Seviye','Büyük Başarı',0,'Hemen 1 seviye atla.']
+];
+
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const otherOf = r => r === 'h' ? 'g' : 'h';
+
+let peer = null, conn = null, role = null, state = null, view = null;
+let myName = '', roomCode = '', online = false, leaving = false, statusMsg = '';
+
+/* ---------- Oyun durumu (sadece oda sahibinde) ---------- */
+function mkDeck(deck) {
+  const out = [];
+  STARTER.filter(c => c[0] === deck).forEach(c => {
+    for (let i = 0; i < (c[5] || 1); i++) out.push({ id: uid(), deck: c[0], kind: c[1], name: c[2], value: c[3], text: c[4] });
+  });
+  return shuffle(out);
+}
+function freshState(hostName, guestName) {
+  return {
+    players: { h: { name: hostName, level: 1, hand: [], table: [] }, g: { name: guestName || 'Bekleniyor', level: 1, hand: [], table: [] } },
+    door: mkDeck('door'), treasure: mkDeck('treasure'), doorDisc: [], treasureDisc: [],
+    center: [], log: [], die: null, online: { h: true, g: false }
+  };
+}
+function log(t) { state.log.push(t); if (state.log.length > 50) state.log.shift(); }
+function draw(deckName) {
+  const deck = state[deckName], disc = state[deckName + 'Disc'];
+  if (!deck.length && disc.length) {
+    state[deckName] = shuffle(disc.splice(0));
+    log((deckName === 'door' ? 'Kapı' : 'Hazine') + ' destesi bitti, atılanlar karıştırıldı.');
+  }
+  return state[deckName].pop() || null;
+}
+function take(id, r) {
+  const o = otherOf(r);
+  const lists = [state.players[r].hand, state.players[r].table, state.center, state.players[o].table, state.doorDisc, state.treasureDisc];
+  for (const l of lists) { const i = l.findIndex(c => c.id === id); if (i >= 0) return l.splice(i, 1)[0]; }
+  return null;
+}
+function applyAct(r, a) {
+  const me = state.players[r], op = state.players[otherOf(r)];
+  switch (a.t) {
+    case 'draw': {
+      const c = draw(a.d); if (!c) { log('Deste boş.'); break; }
+      me.hand.push(c); log(`${me.name} ${a.d === 'door' ? 'Kapı' : 'Hazine'} destesinden elini çekti.`); break;
+    }
+    case 'reveal': {
+      const c = draw(a.d); if (!c) { log('Deste boş.'); break; }
+      state.center.push(c); log(`${me.name} ${a.d === 'door' ? 'Kapıyı tekmeledi' : 'Hazine açtı'}: ${c.name}`); break;
+    }
+    case 'move': {
+      const c = take(a.id, r); if (!c) break;
+      if (a.to === 'hand') { me.hand.push(c); log(`${me.name} "${c.name}" kartını eline aldı.`); }
+      else if (a.to === 'table') { me.table.push(c); log(`${me.name} masaya koydu: ${c.name}`); }
+      else if (a.to === 'center') { state.center.push(c); log(`${me.name} ortaya koydu: ${c.name}`); }
+      else if (a.to === 'give') { op.hand.push(c); log(`${me.name}, ${op.name}'e bir kart verdi.`); }
+      else if (a.to === 'discard') { state[c.deck + 'Disc'].push(c); log(`${me.name} attı: ${c.name}`); }
+      break;
+    }
+    case 'level': {
+      const p = a.who === 'me' ? me : op;
+      p.level = Math.max(1, p.level + a.d); log(`${p.name} seviyesi ${p.level} oldu.`); break;
+    }
+    case 'roll': {
+      const v = 1 + Math.floor(Math.random() * 6);
+      state.die = { by: me.name, val: v, n: (state.die ? state.die.n : 0) + 1 }; log(`${me.name} zar attı: ${v}`); break;
+    }
+    case 'clearCenter': {
+      const n = state.center.length;
+      state.center.splice(0).forEach(c => state[c.deck + 'Disc'].push(c));
+      if (n) log(`${me.name} ortadaki kartları attı.`); break;
+    }
+    case 'deal': {
+      ['h', 'g'].forEach(k => { for (let i = 0; i < 4; i++) { const d = draw('door'); if (d) state.players[k].hand.push(d); const t = draw('treasure'); if (t) state.players[k].hand.push(t); } });
+      log('Kartlar dağıtıldı (4 Kapı + 4 Hazine).'); break;
+    }
+    case 'newgame': {
+      const h = state.players.h.name, g = state.players.g.name, on = state.online;
+      state = freshState(h, g); state.online = on; log('Yeni oyun başladı.'); break;
+    }
+    case 'addcard': {
+      const c = { id: uid(), deck: a.deck, kind: a.kind || 'Kart', name: a.name, value: +a.value || 0, text: a.text || '' };
+      state[a.deck].push(c); shuffle(state[a.deck]); log(`${me.name} desteye kart ekledi: ${c.name}`); break;
+    }
+    case 'shuffle': { shuffle(state[a.d]); log(`${me.name} ${a.d === 'door' ? 'Kapı' : 'Hazine'} destesini karıştırdı.`); break; }
+  }
+}
+function viewFor(r) {
+  const s = JSON.parse(JSON.stringify(state));
+  const o = otherOf(r);
+  s.players[o].hand = s.players[o].hand.map(() => null);
+  s.doorN = s.door.length; s.treasureN = s.treasure.length;
+  delete s.door; delete s.treasure;
+  s.me = r;
+  return s;
+}
+
+/* ---------- Ağ ---------- */
+function sync() {
+  if (role !== 'h') return;
+  try { localStorage.setItem('mnk_host', JSON.stringify({ code: roomCode, name: myName, state })); } catch (e) {}
+  view = viewFor('h');
+  if (conn && conn.open) conn.send({ type: 'state', s: viewFor('g') });
+  render();
+}
+function dispatch(a) {
+  if (role === 'h') { applyAct('h', a); sync(); }
+  else if (conn && conn.open) conn.send({ type: 'act', a });
+}
+function hostRoom(resume) {
+  roomCode = resume ? resume.code : Math.random().toString(36).slice(2, 7).toUpperCase();
+  role = 'h';
+  state = resume ? resume.state : freshState(myName);
+  state.players.h.name = myName; state.online = { h: true, g: false };
+  peer = new Peer('mnk-' + roomCode);
+  peer.on('open', () => { statusMsg = ''; if (!resume) log('Oda açıldı.'); sync(); });
+  peer.on('connection', c => {
+    if (conn && conn.open) { c.on('open', () => c.close()); return; }
+    conn = c;
+    c.on('open', () => { state.online.g = true; sync(); });
+    c.on('data', m => {
+      if (m.type === 'hello') { state.players.g.name = m.name || 'Misafir'; log(`${state.players.g.name} odaya katıldı.`); state.online.g = true; sync(); }
+      else if (m.type === 'act') { applyAct('g', m.a); sync(); }
+    });
+    c.on('close', () => { state.online.g = false; sync(); });
+  });
+  peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { peer.destroy(); hostRoom(null); }
+    else { statusMsg = 'Bağlantı hatası: ' + e.type; render(); }
+  });
+  renderGame();
+}
+function joinRoom(code, name) {
+  role = 'g'; roomCode = code.toUpperCase().trim(); myName = name; leaving = false;
+  try { localStorage.setItem('mnk_guest', JSON.stringify({ code: roomCode, name })); } catch (e) {}
+  connectGuest();
+  renderGame();
+}
+function connectGuest() {
+  if (peer) { try { peer.destroy(); } catch (e) {} }
+  statusMsg = 'Bağlanılıyor...'; render();
+  peer = new Peer();
+  peer.on('open', () => {
+    conn = peer.connect('mnk-' + roomCode, { reliable: true });
+    conn.on('open', () => { statusMsg = ''; conn.send({ type: 'hello', name: myName }); });
+    conn.on('data', m => { if (m.type === 'state') { view = m.s; render(); } });
+    conn.on('close', () => { statusMsg = 'Bağlantı koptu, tekrar deneniyor...'; view = view; render(); retry(); });
+  });
+  peer.on('error', e => {
+    if (e.type === 'peer-unavailable') { statusMsg = 'Oda bulunamadı. Kod doğru mu? Oda sahibi sayfayı açık tutuyor mu?'; render(); retry(8000); }
+    else { statusMsg = 'Bağlantı hatası: ' + e.type; render(); retry(8000); }
+  });
+}
+let retryT = null;
+function retry(ms) { clearTimeout(retryT); if (leaving) return; retryT = setTimeout(() => { if (!leaving && role === 'g') connectGuest(); }, ms || 3000); }
+
+/* ---------- Arayüz ---------- */
+function renderLobby() {
+  const q = new URLSearchParams(location.search).get('oda') || '';
+  let savedName = '', hasHost = false;
+  try { const g = JSON.parse(localStorage.getItem('mnk_guest') || 'null'); if (g) savedName = g.name; const h = JSON.parse(localStorage.getItem('mnk_host') || 'null'); if (h) { hasHost = true; savedName = savedName || h.name; } } catch (e) {}
+  $('#app').innerHTML = `
+  <div class="lobby">
+    <h1>Sanal Kart Masası</h1>
+    <p>İki kişilik, uzaktan oynanan Munchkin tarzı masa. Kurallar sizde, masa burada.</p>
+    <div class="panel">
+      <label for="nm">Adın</label>
+      <input id="nm" maxlength="20" value="${esc(savedName)}" placeholder="Adını yaz">
+    </div>
+    <div class="panel">
+      <b>Oda aç</b>
+      <p style="margin:6px 0 10px">Bir kod çıkar. Linki arkadaşına gönder.</p>
+      <div class="row">
+        <button class="primary" data-a="host">Oda aç</button>
+        ${hasHost ? '<button data-a="resume">Önceki oyuna devam et</button>' : ''}
+      </div>
+    </div>
+    <div class="panel">
+      <b>Odaya katıl</b>
+      <label for="cd">Oda kodu</label>
+      <input id="cd" maxlength="8" value="${esc(q)}" placeholder="Örn: K7P2Q" style="text-transform:uppercase">
+      <div class="row" style="margin-top:10px"><button class="primary" data-a="join">Katıl</button></div>
+    </div>
+    <div class="err" id="lerr"></div>
+  </div>`;
+}
+function renderGame() { render(); }
+function findCard(id) {
+  if (!view) return null;
+  const P = view.players;
+  const lists = [[P[view.me].hand, 'hand'], [P[view.me].table, 'table'], [view.center, 'center'], [P[otherOf(view.me)].table, 'otherTable'], [view.doorDisc, 'discard'], [view.treasureDisc, 'discard']];
+  for (const [l, loc] of lists) { const c = l.find(x => x && x.id === id); if (c) return { c, loc }; }
+  return null;
+}
+function cardHTML(c) {
+  if (!c) return '<div class="card back">Gizli kart</div>';
+  const v = +c.value;
+  const val = v ? `<div class="val">${v > 0 && c.kind !== 'Canavar' ? '+' : ''}${v}</div>` : '';
+  return `<div class="card ${c.deck}" data-card="${c.id}" tabindex="0"><div class="kind">${esc(c.kind)}</div><div class="nm">${esc(c.name)}</div>${val}<div class="tx">${esc(c.text)}</div></div>`;
+}
+function cardsRow(list, emptyText) {
+  return `<div class="cards">${list.length ? list.map(cardHTML).join('') : `<div class="empty">${emptyText}</div>`}</div>`;
+}
+function tableBonus(p) { return p.table.reduce((s, c) => s + (+c.value || 0), 0); }
+function render() {
+  if (!role) { renderLobby(); return; }
+  if (!view) {
+    $('#app').innerHTML = `<div class="lobby"><h1>Oda ${esc(roomCode)}</h1><p>${esc(statusMsg || 'Bağlanılıyor...')}</p><button data-a="leave">Geri dön</button></div>`;
+    return;
+  }
+  const keep = { top: window.scrollY };
+  const me = view.players[view.me], op = view.players[otherOf(view.me)];
+  const opOnline = view.online[otherOf(view.me)];
+  const monsters = view.center.filter(c => c.kind === 'Canavar');
+  const mods = view.center.filter(c => c.kind !== 'Canavar');
+  const mSum = monsters.reduce((s, c) => s + (+c.value || 0), 0), modSum = mods.reduce((s, c) => s + (+c.value || 0), 0);
+  const myPow = me.level + tableBonus(me), opPow = op.level + tableBonus(op);
+  const link = location.origin + location.pathname + '?oda=' + roomCode;
+  const modal = document.getElementById('modalHost') ? document.getElementById('modalHost').innerHTML : '';
+  $('#app').innerHTML = `
+  <div class="wrap">
+    <div class="top">
+      <div class="row">
+        <span class="pill"><span class="dot ${opOnline ? 'on' : ''}"></span>${esc(op.name)}${opOnline ? '' : ' (çevrimdışı)'}</span>
+        <span class="pill">Oda: <b>${esc(roomCode)}</b></span>
+        <button class="small" data-a="copy" data-link="${esc(link)}">Linki kopyala</button>
+      </div>
+      <div class="row">
+        ${view.die ? `<span class="pill">🎲 <b>${view.die.val}</b> (${esc(view.die.by)})</span>` : ''}
+        <button data-a="roll">Zar at</button>
+      </div>
+    </div>
+    ${statusMsg ? `<div class="banner">${esc(statusMsg)}</div>` : ''}
+    ${!opOnline && role === 'h' ? '<div class="banner">Rakip bekleniyor. "Linki kopyala" ile bağlantıyı gönder. Sen bu sayfayı açık tut.</div>' : ''}
+
+    <div class="zone">
+      <div class="zhead">
+        <div class="zname">${esc(op.name)}</div>
+        <div class="stat">Seviye <button class="small" data-a="level" data-who="other" data-d="-1">−</button><span class="lvl">${op.level}</span><button class="small" data-a="level" data-who="other" data-d="1">+</button>
+        <span class="pill">Güç ${opPow}</span><span class="pill">Elinde ${op.hand.length} kart</span></div>
+      </div>
+      <div class="sub">Masası</div>
+      ${cardsRow(op.table, 'Masada kart yok')}
+    </div>
+
+    <div class="zone">
+      <div class="zhead"><div class="zname">Orta (savaş alanı)</div>
+        <div class="row"><button class="small" data-a="clearCenter">Ortayı temizle</button></div></div>
+      ${cardsRow(view.center, 'Kapıyı tekmele ya da ortaya kart koy')}
+      <div class="power">
+        <span>Canavar <b>${mSum}</b>${modSum ? ` (${modSum > 0 ? '+' : ''}${modSum} ek)` : ''} = <b>${mSum + modSum}</b></span>
+        <span>${esc(me.name)} <b>${myPow}</b></span>
+        <span>${esc(op.name)} <b>${opPow}</b></span>
+      </div>
+      <div class="decks">
+        <div class="deck"><div class="title">Kapı destesi</div><div class="count">${view.doorN} kart</div>
+          <button class="primary" data-a="reveal" data-d="door">Kapıyı tekmele</button>
+          <button data-a="draw" data-d="door">Elime çek</button>
+          <button class="small" data-a="discards" data-d="door">Atılanlar (${view.doorDisc.length})</button></div>
+        <div class="deck"><div class="title">Hazine destesi</div><div class="count">${view.treasureN} kart</div>
+          <button class="primary" data-a="reveal" data-d="treasure">Hazine aç</button>
+          <button data-a="draw" data-d="treasure">Elime çek</button>
+          <button class="small" data-a="discards" data-d="treasure">Atılanlar (${view.treasureDisc.length})</button></div>
+        <div class="deck"><div class="title">Masa</div>
+          <button data-a="deal">Dağıt (4+4)</button>
+          <button class="small" data-a="addform">Kart ekle</button>
+          <button class="small" data-a="newgame">Yeni oyun</button></div>
+      </div>
+    </div>
+
+    <div class="zone">
+      <div class="zhead">
+        <div class="zname">${esc(me.name)} (sen)</div>
+        <div class="stat">Seviye <button class="small" data-a="level" data-who="me" data-d="-1">−</button><span class="lvl">${me.level}</span><button class="small" data-a="level" data-who="me" data-d="1">+</button>
+        <span class="pill">Güç ${myPow}</span></div>
+      </div>
+      <div class="sub">Masan</div>
+      ${cardsRow(me.table, 'Masanda kart yok')}
+      <div class="sub">Elin (rakip görmez)</div>
+      ${cardsRow(me.hand, 'Elin boş')}
+    </div>
+
+    <div class="zone"><div class="zname" style="margin-bottom:6px">Olaylar</div>
+      <div class="log">${view.log.map(l => `<div>${esc(l)}</div>`).join('')}</div></div>
+    <button class="small" data-a="leave">Odadan çık</button>
+  </div>
+  <div id="modalHost">${modal}</div>`;
+  window.scrollTo(0, keep.top);
+}
+
+/* ---------- Pencereler ---------- */
+function openModal(html) { document.getElementById('modalHost').innerHTML = `<div class="modal" data-a="closeBg"><div class="mbox">${html}</div></div>`; }
+function closeModal() { const m = document.getElementById('modalHost'); if (m) m.innerHTML = ''; }
+function cardModal(id) {
+  const f = findCard(id); if (!f) return;
+  const { c, loc } = f;
+  const B = (label, to, cls) => `<button ${cls ? `class="${cls}"` : ''} data-a="move" data-id="${c.id}" data-to="${to}">${label}</button>`;
+  let btns = '';
+  if (loc === 'hand') btns = B('Masaya koy', 'table', 'primary') + B('Ortaya koy', 'center') + B('Rakibe ver', 'give') + B('At', 'discard');
+  else if (loc === 'table') btns = B('Ele al', 'hand') + B('Ortaya koy', 'center') + B('Rakibe ver', 'give') + B('At', 'discard');
+  else if (loc === 'center') btns = B('Ele al', 'hand', 'primary') + B('Masaya koy', 'table') + B('At', 'discard');
+  else if (loc === 'otherTable') btns = B('Bana al', 'hand') + B('At', 'discard');
+  else if (loc === 'discard') btns = B('Ele al', 'hand', 'primary') + B('Ortaya koy', 'center');
+  openModal(`<div class="big">${cardHTML(c).replace('data-card', 'data-x')}</div><div class="mbtns">${btns}<button data-a="closeModal">Kapat</button></div>`);
+}
+function discardModal(d) {
+  const list = d === 'door' ? view.doorDisc : view.treasureDisc;
+  openModal(`<b>${d === 'door' ? 'Kapı' : 'Hazine'} atılanlar</b><div class="cards" style="margin-top:10px">${list.length ? list.map(cardHTML).join('') : '<div class="empty">Boş</div>'}</div><div class="mbtns"><button data-a="shuf" data-d="${d}">Desteyi karıştır</button><button data-a="closeModal">Kapat</button></div>`);
+}
+function addForm() {
+  openModal(`<b>Desteye kart ekle</b>
+  <label>Deste</label><select id="af-deck"><option value="door">Kapı</option><option value="treasure">Hazine</option></select>
+  <label>Tür (Canavar, Lanet, Eşya...)</label><input id="af-kind" value="Canavar">
+  <label>İsim</label><input id="af-name" maxlength="40">
+  <label>Değer (canavar seviyesi veya eşya bonusu)</label><input id="af-val" type="number" value="0">
+  <label>Açıklama</label><textarea id="af-text" rows="3" maxlength="160"></textarea>
+  <div class="mbtns"><button class="primary" data-a="addcard">Ekle</button><button data-a="closeModal">Kapat</button></div>`);
+}
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
+
+/* ---------- Olaylar ---------- */
+document.addEventListener('click', e => {
+  const cardEl = e.target.closest('[data-card]');
+  const btn = e.target.closest('[data-a]');
+  if (btn && btn.dataset.a === 'closeBg') { if (e.target === btn) closeModal(); return; }
+  if (btn && !btn.classList.contains('modal')) {
+    const a = btn.dataset.a, d = btn.dataset;
+    switch (a) {
+      case 'host': case 'resume': {
+        const nm = $('#nm').value.trim(); if (!nm) { $('#lerr').textContent = 'Önce adını yaz.'; return; }
+        myName = nm; leaving = false;
+        let res = null;
+        if (a === 'resume') { try { res = JSON.parse(localStorage.getItem('mnk_host')); } catch (x) {} }
+        hostRoom(res); return;
+      }
+      case 'join': {
+        const nm = $('#nm').value.trim(), cd = $('#cd').value.trim();
+        if (!nm) { $('#lerr').textContent = 'Önce adını yaz.'; return; }
+        if (!cd) { $('#lerr').textContent = 'Oda kodunu yaz.'; return; }
+        joinRoom(cd, nm); return;
+      }
+      case 'leave': {
+        if (!confirm('Odadan çıkılsın mı?')) return;
+        leaving = true; clearTimeout(retryT);
+        if (conn) try { conn.close(); } catch (x) {}
+        if (peer) try { peer.destroy(); } catch (x) {}
+        peer = conn = null; role = null; view = null; state = null; statusMsg = '';
+        history.replaceState(null, '', location.pathname); render(); return;
+      }
+      case 'copy': { navigator.clipboard.writeText(d.link).then(() => toast('Link kopyalandı'), () => prompt('Linki kopyala:', d.link)); return; }
+      case 'closeModal': closeModal(); return;
+      case 'roll': dispatch({ t: 'roll' }); return;
+      case 'draw': dispatch({ t: 'draw', d: d.d }); return;
+      case 'reveal': dispatch({ t: 'reveal', d: d.d }); return;
+      case 'level': dispatch({ t: 'level', who: d.who, d: +d.d }); return;
+      case 'clearCenter': dispatch({ t: 'clearCenter' }); return;
+      case 'deal': if (confirm('Her iki oyuncuya 4 Kapı + 4 Hazine dağıtılsın mı?')) dispatch({ t: 'deal' }); return;
+      case 'newgame': if (confirm('Her şey sıfırlansın ve yeni oyun başlasın mı?')) dispatch({ t: 'newgame' }); return;
+      case 'discards': discardModal(d.d); return;
+      case 'shuf': dispatch({ t: 'shuffle', d: d.d }); closeModal(); return;
+      case 'addform': addForm(); return;
+      case 'addcard': {
+        const name = $('#af-name').value.trim(); if (!name) { toast('Kart ismi yaz'); return; }
+        dispatch({ t: 'addcard', deck: $('#af-deck').value, kind: $('#af-kind').value.trim(), name, value: $('#af-val').value, text: $('#af-text').value.trim() });
+        closeModal(); return;
+      }
+      case 'move': dispatch({ t: 'move', id: d.id, to: d.to }); closeModal(); return;
+    }
+  }
+  if (cardEl) cardModal(cardEl.dataset.card);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && e.target.dataset && e.target.dataset.card) cardModal(e.target.dataset.card);
+});
+render();
+</script>
+</body>
+</html>
